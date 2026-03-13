@@ -22,13 +22,17 @@ async def handle_desires(update: Update, context: ContextTypes.DEFAULT_TYPE):
     desires = update.message.text.strip()
     # context.user_data["desires"] = desires
     await update.message.reply_text("Підбираю фільм...")
-
     ai_service = ChatGptService(config.OPENAI_TOKEN)
-
     prompt = f"""
-    Поверни список з 3 фільмів на основі вподобань користувача
+    Порадь 3 фільми.
+    
     Жанр: {context.user_data["genre"]}
-    Інші побажання: {desires}
+    Побажання: {desires}
+    
+    Формат:
+    1. Назва (рік) — короткий опис
+    2. Назва (рік) — короткий опис
+    3. Назва (рік) — короткий опис
     """
     ai_service.set_prompt(prompt)
     text = await ai_service.send_message_list()

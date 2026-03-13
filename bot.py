@@ -1,12 +1,14 @@
-from telegram import Update, BotCommand, BotCommandScopeChat
+from telegram import Update, BotCommand, BotCommandScopeChat, ReplyKeyboardRemove
 from telegram.ext import ApplicationBuilder, CallbackQueryHandler, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters
 import asyncio
+import logging
 
 from gpt import ChatGptService
 from states_test import get_profile_conversation_handler
 from util import (load_message, send_text, send_image, show_main_menu,
                   default_callback_handler, load_prompt, load_instructions)
 from credentials import config
+from keyboards.gpt_keyboard import gpt_keyboard
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -20,8 +22,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'talk': 'Поговорити з відомою особистістю 👤',
         'quiz': 'Взяти участь у квізі ❓',
         'movie': 'Рекомендації щодо фільмів та книг'
-        # Додати команду в меню можна так:
-        # 'command': 'button text'
 
     })
 
@@ -37,19 +37,27 @@ async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 GPT_DIALOG = 1
 
-async def gpt(update, context): # опрацювання команди /gpt
-    prompt = load_prompt("gpt")
+async def gpt(update, context):
     await send_image(update, context, "gpt")
     message = load_message("gpt")
-    await send_text(update, context, message)
+    await update.message.reply_text(
+        message,
+        reply_markup=gpt_keyboard()
+    )
     return GPT_DIALOG
 
-async def gpt_dialog(update, context):  # опрацювання команди /gpt
+async def gpt_dialog(update, context):
     text = update.message.text
+    if text == "❌ Вийти з GPT":
+        await update.message.reply_text(
+            "Діалог завершено",
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return ConversationHandler.END
     prompt = load_prompt("gpt")
     chat_gpt = ChatGptService(config.OPENAI_TOKEN)
     answer = await chat_gpt.send_question(prompt, text)
-    await send_text(update, context, answer)
+    await update.message.reply_text(answer)
     return GPT_DIALOG
 
 async def cancel(update, context):
@@ -94,6 +102,10 @@ gpt_handler = ConversationHandler(
     ],
 )
 
+async def error_handler(update, context):
+    logging.error("Виникло виключення під час опрацювання оновлення (update):", exc_info=context.error)
+
+
 
 def main():
     app = ApplicationBuilder().token(config.BOT_TOKEN).build()
@@ -105,10 +117,11 @@ def main():
 
     app.add_handler(gpt_handler)
     app.add_handler(get_profile_conversation_handler())
+    # app.add_handler(get_movie_conversation_handler())
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_chat_message))
 
-
+    app.add_error_handler(error_handler)
 
     print("Bot started...")
     app.run_polling()
