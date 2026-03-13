@@ -3,6 +3,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Message, \
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
+import os
 
 
 # конвертує об'єкт user в рядок
@@ -94,6 +95,16 @@ async def default_callback_handler(update: Update,
     await update.callback_query.answer()
     query = update.callback_query.data
     await send_html(update, context, f'You have pressed button with {query} callback')
+
+def load_instructions():
+    docs_text = ""
+    for file in os.listdir("resources/instructions"):
+        with open(f"resources/instructions/{file}", "r", encoding="utf-8") as f:
+            docs_text += f.read() + "\n"
+    return docs_text
+
+
+
 
 
 class Dialog:
