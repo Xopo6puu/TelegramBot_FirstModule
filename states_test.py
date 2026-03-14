@@ -41,7 +41,7 @@ async def handle_desires(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-def get_profile_conversation_handler() -> ConversationHandler:
+def get_movie_conversation_handler() -> ConversationHandler:
     """Повертає ConversationHandler для сценарію профілю."""
     return ConversationHandler(
         entry_points=[

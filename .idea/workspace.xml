@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8b33b4dc-99f2-4a66-8c61-7c2506b433a5" name="Changes" comment="Update function GPT and connected bot in group chat">
-      <change afterPath="$PROJECT_DIR$/handlers/gpt_handler.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/keyboards/gpt_keyboard.py" afterDir="false" />
+    <list default="true" id="8b33b4dc-99f2-4a66-8c61-7c2506b433a5" name="Changes" comment="Add keyboards">
+      <change afterPath="$PROJECT_DIR$/keyboards/talk_keyboard.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/states_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/states_test.py" afterDir="false" />
@@ -114,13 +113,22 @@
       <option name="project" value="LOCAL" />
       <updated>1773436194314</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Add keyboards">
+      <option name="closed" value="true" />
+      <created>1773439949518</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1773439949518</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initial commit: Telegram ChatGPT bot structure. Send in the repo." />
     <MESSAGE value="Create function GPT" />
     <MESSAGE value="Update function GPT and connected bot in group chat" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update function GPT and connected bot in group chat" />
+    <MESSAGE value="Add keyboards" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add keyboards" />
   </component>
 </project>

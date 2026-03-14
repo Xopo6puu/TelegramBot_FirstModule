@@ -4,11 +4,12 @@ import asyncio
 import logging
 
 from gpt import ChatGptService
-from states_test import get_profile_conversation_handler
+from states_test import get_movie_conversation_handler
 from util import (load_message, send_text, send_image, show_main_menu,
                   default_callback_handler, load_prompt, load_instructions)
 from credentials import config
 from keyboards.gpt_keyboard import gpt_keyboard
+from keyboards.talk_keyboard import talk_keyboard
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -64,6 +65,36 @@ async def cancel(update, context):
     await send_text(update, context, "Діалог завершено")
     return ConversationHandler.END
 
+TALK_DIALOG = 1
+
+async def talk(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await send_image(update, context, "talk")
+    message = load_message("talk")
+    await update.message.reply_text(
+        message,
+        reply_markup=talk_keyboard()
+    )
+    return TALK_DIALOG
+
+async def talk_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    context.user_data["talk_prompt"] = query.data
+    await query.message.reply_text("Можеш задати питання.")
+    return TALK_DIALOG
+
+async def talk_dialog(update, context):
+    text = update.message.text
+    prompt_name = context.user_data.get("talk_prompt")
+    if not prompt_name:
+        await update.message.reply_text("Спочатку оберіть особистість.")
+        return TALK_DIALOG
+    prompt = load_prompt(prompt_name)
+    chat_gpt = ChatGptService(config.OPENAI_TOKEN)
+    answer = await chat_gpt.send_question(prompt, text)
+    await update.message.reply_text(answer)
+    return TALK_DIALOG
+
 
 async def handle_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     DOCS = load_instructions()
@@ -102,6 +133,20 @@ gpt_handler = ConversationHandler(
     ],
 )
 
+talk_handler = ConversationHandler(
+    entry_points=[CommandHandler("talk", talk)],
+    states={
+        TALK_DIALOG: [
+            CallbackQueryHandler(talk_button, pattern="^talk_"),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, talk_dialog),
+        ]
+    },
+    fallbacks=[],
+    per_chat=True,
+    per_user=True,
+    per_message=False
+)
+
 async def error_handler(update, context):
     logging.error("Виникло виключення під час опрацювання оновлення (update):", exc_info=context.error)
 
@@ -116,10 +161,11 @@ def main():
 
 
     app.add_handler(gpt_handler)
-    app.add_handler(get_profile_conversation_handler())
-    # app.add_handler(get_movie_conversation_handler())
+    app.add_handler(talk_handler)
+    # app.add_handler(get_profile_conversation_handler())
+    app.add_handler(get_movie_conversation_handler())
 
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_chat_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_chat_message), group=1)
 
     app.add_error_handler(error_handler)
 
