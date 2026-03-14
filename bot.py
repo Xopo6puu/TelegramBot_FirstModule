@@ -10,6 +10,7 @@ from util import (load_message, send_text, send_image, show_main_menu,
 from credentials import config
 from keyboards.gpt_keyboard import gpt_keyboard
 from keyboards.talk_keyboard import talk_keyboard
+from keyboards.quiz_keyboard import quiz_keyboard, quiz_r_keyboard
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -96,6 +97,75 @@ async def talk_dialog(update, context):
     return TALK_DIALOG
 
 
+QUIZ_THEME = 1
+QUIZ_ANSWER = 2
+
+async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await send_image(update, context, "quiz")
+    message = load_message("quiz")
+    await send_text(update, context, message)
+    await update.message.reply_text(
+        "Обери тему, на яку будеш грати:",
+        reply_markup=quiz_keyboard()
+    )
+    context.user_data["score"] = 0
+    return QUIZ_THEME
+
+async def quiz_theme(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    theme = query.data.replace("quiz_", "")
+    context.user_data["quiz_theme"] = theme
+    prompt = f"""
+    Задай одне питання для квізу на тему {theme}.
+    Питання повинно бути коротким.
+    """
+    chat_gpt = ChatGptService(config.OPENAI_TOKEN)
+    question = await chat_gpt.send_question(prompt, "Згенеруй питання")
+    context.user_data["quiz_question"] = question
+    await query.message.edit_text(question)
+    return QUIZ_ANSWER
+
+async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_answer = update.message.text
+    question = context.user_data["quiz_question"]
+    prompt = f"""
+    Питання: {question}
+    Користувач відповів: {user_answer}
+    Скажи чи правильна відповідь: так або ні.
+    """
+    chat_gpt = ChatGptService(config.OPENAI_TOKEN)
+    result = await chat_gpt.send_question(prompt, user_answer)
+    if result.lower().startswith("так"):
+        context.user_data["score"] += 1
+    score = context.user_data["score"]
+    await update.message.reply_text(
+        f"{result}\n\n🏆 Рахунок: {score}",
+        reply_markup=quiz_r_keyboard()
+    )
+    return QUIZ_ANSWER
+
+async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    theme = context.user_data["quiz_theme"]
+    prompt = f"Задай нове питання для квізу на тему {theme}"
+    chat_gpt = ChatGptService(config.OPENAI_TOKEN)
+    question = await chat_gpt.send_question(prompt, "Нове питання")
+    context.user_data["quiz_question"] = question
+    await query.message.reply_text(question)
+    return QUIZ_ANSWER
+
+async def quiz_change(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.message.edit_text(
+        "Обери тему квізу:",
+        reply_markup=quiz_keyboard()
+    )
+    return QUIZ_THEME
+
+
 async def handle_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     DOCS = load_instructions()
     if not update.message or not update.message.text:
@@ -147,6 +217,24 @@ talk_handler = ConversationHandler(
     per_message=False
 )
 
+quiz_handler = ConversationHandler(
+    entry_points=[CommandHandler("quiz", quiz)],
+    states={
+        QUIZ_THEME: [
+            CallbackQueryHandler(quiz_theme, pattern="^quiz_(geo|history|science|movies)$"),
+        ],
+
+        QUIZ_ANSWER: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, quiz_answer),
+            CallbackQueryHandler(quiz_next, pattern="^quiz_next$"),
+            CallbackQueryHandler(quiz_change, pattern="^quiz_change$"),
+        ],
+    },
+    fallbacks=[
+        CallbackQueryHandler(cancel, pattern="^quiz_end$")
+    ],
+)
+
 async def error_handler(update, context):
     logging.error("Виникло виключення під час опрацювання оновлення (update):", exc_info=context.error)
 
@@ -159,7 +247,7 @@ def main():
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('random', random))
 
-
+    app.add_handler(quiz_handler)
     app.add_handler(gpt_handler)
     app.add_handler(talk_handler)
     # app.add_handler(get_profile_conversation_handler())
