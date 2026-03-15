@@ -14,9 +14,9 @@
 ### **Встановлення**
 
 1. Клонувати репозиторій
-git clone https://github.com/username/project.git
+git clone https://github.com/Xopo6puu/TelegramBot_FirstModule
 2. Перейти в папку проєкту
-cd project
+cd FSN_Project
 3. Створити віртуальне середовище
 python -m venv .venv
 4. Активувати середовище
