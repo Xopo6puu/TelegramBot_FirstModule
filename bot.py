@@ -11,6 +11,13 @@ from credentials import config
 from keyboards.gpt_keyboard import gpt_keyboard
 from keyboards.talk_keyboard import talk_keyboard
 from keyboards.quiz_keyboard import quiz_keyboard, quiz_r_keyboard
+# from handlers.conversation_handlers import (
+#     gpt_handler,
+#     talk_handler,
+#     quiz_handler
+# )
+#
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -119,6 +126,13 @@ async def quiz_theme(update: Update, context: ContextTypes.DEFAULT_TYPE):
     prompt = f"""
     Задай одне питання для квізу на тему {theme}.
     Питання повинно бути коротким.
+    Формат:
+    Питання
+    A)
+    B)
+    C)
+    D)
+    НЕ пиши правильну відповідь.
     """
     chat_gpt = ChatGptService(config.OPENAI_TOKEN)
     question = await chat_gpt.send_question(prompt, "Згенеруй питання")
@@ -250,7 +264,6 @@ def main():
     app.add_handler(quiz_handler)
     app.add_handler(gpt_handler)
     app.add_handler(talk_handler)
-    # app.add_handler(get_profile_conversation_handler())
     app.add_handler(get_movie_conversation_handler())
 
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_chat_message), group=1)
